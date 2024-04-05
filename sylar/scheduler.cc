@@ -10,8 +10,9 @@ static sylar::Logger::ptr g_logger = SYLAR_LOG_NAME("system");
 static thread_local Scheduler* t_scheduler = nullptr; // 当前协程调度器
 static thread_local Fiber* t_scheduler_fiber = nullptr; // 每个线程的主协程
 
-Scheduler::Scheduler(size_t threads, bool use_caller, const std::string& name)
-    :m_name(name) {
+Scheduler::Scheduler(size_t threads, bool use_caller, const std::string& name, bool hook_enable)
+    :m_name(name)
+    ,hook_enable(hook_enable) {
     SYLAR_ASSERT(threads > 0);
     
     // 是否将调用者线程作为一个调度线程
@@ -115,7 +116,7 @@ void Scheduler::stop() {
         //    m_rootFiber->call();
         //}
         if(!stopping()) {
-            m_rootFiber->swapIn(); // 执行未完成任务
+            m_rootFiber->Resume(); // 执行未完成任务
         }
     }
     SYLAR_LOG_DEBUG(g_logger) << "main return";
@@ -141,7 +142,8 @@ void Scheduler::setThis() {
 // 每个线程执行的函数
 void Scheduler::run() {
     SYLAR_LOG_DEBUG(g_logger) << m_name << " run";
-    set_hook_enable(true);
+    if(hook_enable)
+        set_hook_enable(true);
     setThis(); // 设置调度器线程，每个线程的调度器线程都是一样的
 
     // 非user_caller线程，每个线程设置自己的主协程
@@ -193,16 +195,8 @@ void Scheduler::run() {
         // 如果是fiber，并且处于可执行状态
         if(ft.fiber && (ft.fiber->getState() != Fiber::TERM
                         && ft.fiber->getState() != Fiber::EXCEPT)) {
-            ft.fiber->swapIn(); // 切换协程
+            ft.fiber->Resume(); // 切换协程
             --m_activeThreadCount; // 执行完成.
-
-            if(ft.fiber->getState() == Fiber::READY) {
-                // 将协程重新加入到队列
-                schedule(ft.fiber);
-            } else if(ft.fiber->getState() != Fiber::TERM
-                    && ft.fiber->getState() != Fiber::EXCEPT) {
-                ft.fiber->m_state = Fiber::HOLD; // TODO. bug? 设置hold后面又释放了
-            }
             ft.reset();
         } else if(ft.cb) { // 如果是函数
             if(cb_fiber) {
@@ -211,18 +205,9 @@ void Scheduler::run() {
                 cb_fiber.reset(new Fiber(ft.cb)); // 将callback包装成一个协程
             }
             ft.reset();
-            cb_fiber->swapIn(); // 切换协程
+            cb_fiber->Resume(); // 切换协程
             --m_activeThreadCount;
-            if(cb_fiber->getState() == Fiber::READY){
-                schedule(cb_fiber);
-                cb_fiber.reset();
-            } else if(cb_fiber->getState() == Fiber::EXCEPT
-                    || cb_fiber->getState() == Fiber::TERM) {
-                cb_fiber->reset(nullptr);
-            } else {//if(cb_fiber->getState() != Fiber::TERM) {
-                cb_fiber->m_state = Fiber::HOLD; // TODO. bug? 设置hold后面又释放了
-                cb_fiber.reset();
-            }
+            cb_fiber->reset(nullptr);
         } else { // 如果没有任务，切换到Idle协程
             if(is_active) {
                 --m_activeThreadCount;
@@ -234,7 +219,7 @@ void Scheduler::run() {
             }
 
             ++m_idleThreadCount;
-            idle_fiber->swapIn(); // 切换协程
+            idle_fiber->Resume(); // 切换协程
             --m_idleThreadCount;
             if(idle_fiber->getState() != Fiber::TERM
                     && idle_fiber->getState() != Fiber::EXCEPT) { // 当stopping()为true时，idle得状态变为term

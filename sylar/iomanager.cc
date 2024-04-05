@@ -97,8 +97,8 @@ void IOManager::FdContext::triggerEvent(IOManager::Event event) {
     return;
 }
 
-IOManager::IOManager(size_t threads, bool use_caller, const std::string& name)
-    :Scheduler(threads, use_caller, name) {
+IOManager::IOManager(size_t threads, bool use_caller, const std::string& name, bool hook_enable)
+    :Scheduler(threads, use_caller, name, hook_enable) {
     m_epfd = epoll_create(5000);
     SYLAR_ASSERT(m_epfd > 0);
 
@@ -466,7 +466,7 @@ void IOManager::idle() {
         // cur.reset();
 
         // raw_ptr->swapOut();
-        Fiber::GetThis()->swapOut();
+        Fiber::GetThis()->Yield();
     }
 }
 

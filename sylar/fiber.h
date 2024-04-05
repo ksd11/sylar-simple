@@ -9,8 +9,8 @@
 #ifndef __SYLAR_FIBER_H__
 #define __SYLAR_FIBER_H__
 
-#include <memory>
 #include <functional>
+#include <memory>
 #include <ucontext.h>
 
 namespace sylar {
@@ -21,8 +21,9 @@ class Scheduler;
  * @brief 协程类
  */
 class Fiber : public std::enable_shared_from_this<Fiber> {
-friend class Scheduler;
-public:
+    friend class Scheduler;
+
+  public:
     typedef std::shared_ptr<Fiber> ptr;
 
     /**
@@ -37,26 +38,26 @@ public:
         EXEC,
         /// 结束状态
         TERM,
-        /// 可执行状态
-        READY,
         /// 异常状态
         EXCEPT
     };
-private:
+
+  private:
     /**
      * @brief 无参构造函数
      * @attention 每个线程第一个协程的构造
      */
     Fiber();
 
-public:
+  public:
     /**
      * @brief 构造函数
      * @param[in] cb 协程执行的函数
      * @param[in] stacksize 协程栈大小
      * @param[in] use_caller 是否在MainFiber上调度
      */
-    Fiber(std::function<void()> cb, size_t stacksize = 0, bool use_caller = false);
+    Fiber(std::function<void()> cb, size_t stacksize = 0,
+          bool use_caller = false);
 
     /**
      * @brief 析构函数
@@ -75,48 +76,38 @@ public:
      * @pre getState() != EXEC
      * @post getState() = EXEC
      */
-    void swapIn();
+    void Resume();
 
     /**
      * @brief 将当前协程切换到后台
      */
-    void swapOut();
+    void Yield();
+
+    static void YieldToHold(){
+        GetThis()->Yield();
+    }
 
     /**
      * @brief 返回协程id
      */
-    uint64_t getId() const { return m_id;}
+    uint64_t getId() const { return m_id; }
 
     /**
      * @brief 返回协程状态
      */
-    State getState() const { return m_state;}
-public:
+    State getState() const { return m_state; }
 
+  public:
     /**
      * @brief 设置当前线程的运行协程
      * @param[in] f 运行协程
      */
-    static void SetThis(Fiber* f);
+    static void SetThis(Fiber *f);
 
     /**
      * @brief 返回当前所在的协程
      */
     static Fiber::ptr GetThis();
-
-    /**
-     * @brief 将当前协程切换到后台,并设置为READY状态
-     * @post getState() = READY
-     */
-    static void YieldToReady();
-
-    /**
-     * @brief 将当前协程切换到后台,并设置为HOLD状态
-     * @post getState() = HOLD
-     */
-    static void YieldToHold();
-
-    static void Yield();
 
     /**
      * @brief 返回当前协程的总数量
@@ -133,7 +124,8 @@ public:
      * @brief 获取当前协程的id
      */
     static uint64_t GetFiberId();
-private:
+
+  private:
     /// 协程id
     uint64_t m_id = 0;
     /// 协程运行栈大小
@@ -143,13 +135,13 @@ private:
     /// 协程上下文
     ucontext_t m_ctx;
     /// 协程运行栈指针
-    void* m_stack = nullptr;
+    void *m_stack = nullptr;
     /// 协程运行函数
     std::function<void()> m_cb;
     /// 是否返回scheduler协程
     bool m_run_in_scheduler;
 };
 
-}
+} // namespace sylar
 
 #endif

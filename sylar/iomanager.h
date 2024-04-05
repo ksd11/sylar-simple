@@ -89,7 +89,7 @@ public:
      * @param[in] use_caller 是否将调用线程包含进去
      * @param[in] name 调度器的名称
      */
-    IOManager(size_t threads = 1, bool use_caller = true, const std::string& name = "");
+    IOManager(size_t threads = 1, bool use_caller = true, const std::string& name = "", bool hook_enable = true);
 
     /**
      * @brief 析构函数

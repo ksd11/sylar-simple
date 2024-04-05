@@ -36,6 +36,7 @@ set(LIB_SRC
     sylar/scheduler.cc
     sylar/timer.cc
     sylar/thread.cc
+    sylar/hook.cc
 )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -54,6 +55,7 @@ sylar_add_executable(test_config "tests/test_config.cc" sylar "${LIBS}")
 sylar_add_executable(test_thread "tests/test_thread.cc" sylar "${LIBS}")
 sylar_add_executable(test_fiber "tests/test_fiber.cc" sylar "${LIBS}")
 sylar_add_executable(test_iomanager "tests/test_iomanager.cc" sylar "${LIBS}")
+sylar_add_executable(test_hook "tests/test_hook.cc" sylar "${LIBS}")
 endif()
 
 # 设置bin和library的输出路径

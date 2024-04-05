@@ -1,3 +1,5 @@
+# https://blog.csdn.net/yindongjie1221/article/details/90614261
+# 将__FILE__绝对路径->相对路径
 function(force_redefine_file_macro_for_sources targetname)
     get_target_property(source_files "${targetname}" SOURCES)
     foreach(sourcefile ${source_files})

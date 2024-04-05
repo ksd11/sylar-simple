@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     sylar::Config::LoadFromYaml(root);
 
     std::vector<sylar::Thread::ptr> thrs;
-    for(int i = 0; i < 1; ++i) {
+    for(int i = 0; i < 2; ++i) {
         sylar::Thread::ptr thr(new sylar::Thread(&fun1, "name_" + std::to_string(i * 2)));
         //sylar::Thread::ptr thr2(new sylar::Thread(&fun3, "name_" + std::to_string(i * 2 + 1)));
         thrs.push_back(thr);

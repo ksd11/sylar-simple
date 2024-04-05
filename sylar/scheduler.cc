@@ -115,7 +115,7 @@ void Scheduler::stop() {
         //    m_rootFiber->call();
         //}
         if(!stopping()) {
-            m_rootFiber->call(); // 执行未完成任务
+            m_rootFiber->swapIn(); // 执行未完成任务
         }
     }
     SYLAR_LOG_DEBUG(g_logger) << "main return";

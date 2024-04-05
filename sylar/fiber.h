@@ -83,19 +83,6 @@ public:
     void swapOut();
 
     /**
-     * @brief 将当前线程切换到执行状态
-     * @pre 执行的为当前线程的主协程
-     */
-    void call();
-
-    /**
-     * @brief 将当前线程切换到后台
-     * @pre 执行的为该协程
-     * @post 返回到线程的主协程
-     */
-    void back();
-
-    /**
      * @brief 返回协程id
      */
     uint64_t getId() const { return m_id;}
@@ -143,12 +130,6 @@ public:
     static void MainFunc();
 
     /**
-     * @brief 协程执行函数
-     * @post 执行完成返回到线程调度协程
-     */
-    static void CallerMainFunc();
-
-    /**
      * @brief 获取当前协程的id
      */
     static uint64_t GetFiberId();
@@ -165,6 +146,8 @@ private:
     void* m_stack = nullptr;
     /// 协程运行函数
     std::function<void()> m_cb;
+    /// 是否返回scheduler协程
+    bool m_run_in_scheduler;
 };
 
 }

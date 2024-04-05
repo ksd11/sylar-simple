@@ -130,13 +130,10 @@ void Fiber::Resume() {
 // 切换到后台执行，子协程让出执行权
 void Fiber::Yield() {
     // yield后当前协程变为HOLD暂停状态
-    Fiber::ptr cur = GetThis();
-    SYLAR_ASSERT(!(cur->m_state == INIT));
-    if(cur -> m_state == EXEC)
-        cur->m_state = HOLD;
-    else{
-        cur.reset(); // 难点：这里要reset，否则协程退出时cur持有shared_ptr，导致
-    }
+    SYLAR_ASSERT(!(m_state == INIT));
+    if (m_state == EXEC)
+        m_state = HOLD;
+    // 难点：这里要reset，否则协程退出时cur持有
 
     if (m_run_in_scheduler) {
         SetThis(Scheduler::GetMainFiber());

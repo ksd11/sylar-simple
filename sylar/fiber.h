@@ -54,10 +54,10 @@ class Fiber : public std::enable_shared_from_this<Fiber> {
      * @brief 构造函数
      * @param[in] cb 协程执行的函数
      * @param[in] stacksize 协程栈大小
-     * @param[in] use_caller 是否在MainFiber上调度
+     * @param[in] not_run_in_scheduler 是否和scheduler协程切换
      */
     Fiber(std::function<void()> cb, size_t stacksize = 0,
-          bool use_caller = false);
+          bool not_run_in_scheduler = false);
 
     /**
      * @brief 析构函数
@@ -84,7 +84,11 @@ class Fiber : public std::enable_shared_from_this<Fiber> {
     void Yield();
 
     static void YieldToHold(){
-        GetThis()->Yield();
+        auto cur = GetThis();
+        auto ptr = cur.get();
+        cur.reset();
+        ptr->Yield();
+        // GetThis()->Yield();
     }
 
     /**

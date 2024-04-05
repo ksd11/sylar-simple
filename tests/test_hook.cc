@@ -13,11 +13,13 @@ sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 void test_sleep() {
     sylar::IOManager iom(1);
     iom.schedule([](){
+        // SYLAR_LOG_INFO(g_logger) << "sleep 2 in";
         sleep(2);
         SYLAR_LOG_INFO(g_logger) << "sleep 2";
     });
 
     iom.schedule([](){
+        // SYLAR_LOG_INFO(g_logger) << "sleep 3 in";
         sleep(3);
         SYLAR_LOG_INFO(g_logger) << "sleep 3";
     });

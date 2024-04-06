@@ -15,13 +15,13 @@ Scheduler::Scheduler(size_t threads, bool use_caller, const std::string &name,
     : m_name(name), hook_enable(hook_enable) {
     SYLAR_ASSERT(threads > 0);
 
+    caller_thread_id = GetThreadId();
     // 是否将调用者线程作为一个调度线程
     if (use_caller) {
         sylar::Fiber::GetThis(); // 获得主协程
         --threads;               // 需要的线程减少一个
 
         SYLAR_ASSERT(GetThis() == nullptr);
-        caller_thread_id = GetThreadId();
 
         m_rootFiber.reset(new Fiber(std::bind(&Scheduler::run, this), 0, true));
         sylar::Thread::SetName(m_name);
@@ -73,32 +73,10 @@ void Scheduler::start() {
 
 void Scheduler::stop() {
     assert(caller_thread_id == GetThreadId());
-    
-    m_autoStop = true;
-    if (m_rootFiber && m_threadCount == 0 &&
-        (m_rootFiber->getState() == Fiber::TERM ||
-         m_rootFiber->getState() == Fiber::INIT)) {
-        SYLAR_LOG_INFO(g_logger) << this << " stopped";
-        m_stopping = true;
-
-        if (stopping()) {
-            return;
-        }
-    }
-
-    // if (m_rootThread != -1) {
-    //     SYLAR_ASSERT(GetThis() == this);
-    // } else {
-    //     SYLAR_ASSERT(GetThis() != this);
-    // }
 
     m_stopping = true;
-    for (size_t i = 0; i < m_threadCount; ++i) {
-        tickle();
-    }
-
-    if (m_rootFiber) {
-        tickle();
+    if (stopping()) {
+        return;
     }
 
     if (m_rootFiber) {
@@ -107,6 +85,11 @@ void Scheduler::stop() {
         }
     }
     SYLAR_LOG_DEBUG(g_logger) << "main return";
+
+    // 准备join之前，tick一下唤醒其他线程
+    for (size_t i = 0; i < m_threadCount; ++i) {
+        tickle();
+    }  
 
     std::vector<Thread::ptr> thrs;
     {
@@ -213,8 +196,7 @@ void Scheduler::tickle() { SYLAR_LOG_INFO(g_logger) << "tickle"; }
 // 判断停止条件
 bool Scheduler::stopping() {
     MutexType::Lock lock(m_mutex);
-    return m_autoStop && m_stopping && m_fibers.empty() &&
-           m_activeThreadCount == 0;
+    return m_stopping && m_fibers.empty() && m_activeThreadCount == 0;
 }
 
 // 只要线程没有任务，就执行idle协程

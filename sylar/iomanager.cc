@@ -359,6 +359,7 @@ void IOManager::idle() {
     while (true) {
         uint64_t next_timeout = 0;
         if (SYLAR_UNLIKELY(stopping(next_timeout))) {
+            tickle();
             SYLAR_LOG_INFO(g_logger)
                 << "name=" << getName() << " idle stopping exit";
             break;

@@ -231,6 +231,8 @@ private:
     Fiber::ptr m_rootFiber;
     /// 协程调度器名称
     std::string m_name;
+    /// caller thread id
+    pid_t caller_thread_id;
 protected:
     /// 协程下的线程id数组
     std::vector<int> m_threadIds;

@@ -17,7 +17,7 @@ void test_fiber() {
 
 int main(int argc, char** argv) {
     SYLAR_LOG_INFO(g_logger) << "main";
-    sylar::Scheduler sc(1, true, "worker");
+    sylar::Scheduler sc(3, true, "worker");
     sc.start();
     sleep(2);
     SYLAR_LOG_INFO(g_logger) << "schedule";

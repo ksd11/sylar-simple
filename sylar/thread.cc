@@ -43,6 +43,7 @@ Thread::Thread(std::function<void()> cb, const std::string& name)
 }
 
 Thread::~Thread() {
+    SYLAR_LOG_DEBUG(g_logger) << "Thread::~Thread: " << getId();
     if(m_thread) {
         pthread_detach(m_thread);
     }

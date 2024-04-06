@@ -94,10 +94,10 @@ Fiber::~Fiber() {
 }
 
 // 重置协程函数，并重置状态
-//  INIT，TERM, EXCEPT, HOLD?
+//  INIT，TERM, EXCEPT
 void Fiber::reset(std::function<void()> cb) {
     SYLAR_ASSERT(m_stack);
-    // SYLAR_ASSERT(m_state == TERM || m_state == EXCEPT || m_state == INIT);
+    SYLAR_ASSERT(m_state == TERM || m_state == EXCEPT || m_state == INIT);
     m_cb = cb;
     if (getcontext(&m_ctx)) {
         SYLAR_ASSERT2(false, "getcontext");
@@ -186,9 +186,9 @@ void Fiber::MainFunc() {
     }
 
     auto raw_ptr = cur.get();
-    // SYLAR_LOG_DEBUG(g_logger) << "----" << cur.use_count();
     cur.reset();
     raw_ptr->Yield();
+    // cur->Yield();
 
     SYLAR_ASSERT2(false,
                   "never reach fiber_id=" + std::to_string(raw_ptr->getId()));

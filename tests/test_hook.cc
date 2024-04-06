@@ -66,8 +66,8 @@ void test_sock() {
 }
 
 int main(int argc, char** argv) {
-    test_sleep();
-    return 0;
+    // test_sleep();
+    // return 0;
     sylar::IOManager iom;
     iom.schedule(test_sock);
     return 0;

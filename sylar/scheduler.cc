@@ -21,7 +21,7 @@ Scheduler::Scheduler(size_t threads, bool use_caller, const std::string &name,
         --threads;               // 需要的线程减少一个
 
         SYLAR_ASSERT(GetThis() == nullptr);
-        t_scheduler = this;
+        caller_thread_id = GetThreadId();
 
         m_rootFiber.reset(new Fiber(std::bind(&Scheduler::run, this), 0, true));
         sylar::Thread::SetName(m_name);
@@ -72,6 +72,8 @@ void Scheduler::start() {
 }
 
 void Scheduler::stop() {
+    assert(caller_thread_id == GetThreadId());
+    
     m_autoStop = true;
     if (m_rootFiber && m_threadCount == 0 &&
         (m_rootFiber->getState() == Fiber::TERM ||
@@ -84,12 +86,11 @@ void Scheduler::stop() {
         }
     }
 
-    // bool exit_on_this_fiber = false;
-    if (m_rootThread != -1) {
-        SYLAR_ASSERT(GetThis() == this);
-    } else {
-        SYLAR_ASSERT(GetThis() != this);
-    }
+    // if (m_rootThread != -1) {
+    //     SYLAR_ASSERT(GetThis() == this);
+    // } else {
+    //     SYLAR_ASSERT(GetThis() != this);
+    // }
 
     m_stopping = true;
     for (size_t i = 0; i < m_threadCount; ++i) {
@@ -112,11 +113,12 @@ void Scheduler::stop() {
         MutexType::Lock lock(m_mutex);
         thrs.swap(m_threads);
     }
-
+    // 等待所有的线程退出
     for (auto &i : thrs) {
         i->join();
     }
-    // if(exit_on_this_fiber) {
+    // for (auto &i : m_threads) {
+    //     i->join();
     // }
 }
 
@@ -142,7 +144,6 @@ void Scheduler::run() {
     while (true) {
         ft.reset();
         bool tickle_me = false;
-        bool is_active = false;
         {
             MutexType::Lock lock(m_mutex);
 
@@ -158,16 +159,9 @@ void Scheduler::run() {
 
                 SYLAR_ASSERT(it->fiber || it->cb);
 
-                // 如果该fiber正在执行则跳过
-                if (it->fiber && it->fiber->getState() == Fiber::EXEC) {
-                    ++it;
-                    continue;
-                }
-
                 ft = *it;
                 m_fibers.erase(it++);
                 ++m_activeThreadCount;
-                is_active = true; // 标记找到
                 break;
             }
             tickle_me |= it != m_fibers.end();
@@ -202,22 +196,13 @@ void Scheduler::run() {
             }
         } else {
             // 3. ---- 如果没有任务，切换到Idle协程 ------
-            if (is_active) {
-                --m_activeThreadCount;
-                continue;
-            }
-            if (idle_fiber->getState() == Fiber::TERM) {
-                SYLAR_LOG_INFO(g_logger) << "idle fiber term";
-                break;
-            }
-
             ++m_idleThreadCount;
             idle_fiber->Resume(); // 切换协程
             --m_idleThreadCount;
-            if (idle_fiber->getState() != Fiber::TERM &&
-                idle_fiber->getState() !=
-                    Fiber::EXCEPT) { // 当stopping()为true时，idle得状态变为term
-                idle_fiber->m_state = Fiber::HOLD;
+
+            if (idle_fiber->getState() == Fiber::TERM) {
+                SYLAR_LOG_INFO(g_logger) << "idle fiber term";
+                break;
             }
         }
     }

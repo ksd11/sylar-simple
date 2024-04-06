@@ -72,6 +72,7 @@ void Scheduler::start() {
 }
 
 void Scheduler::stop() {
+    // 只允许caller线程调用stop
     assert(caller_thread_id == GetThreadId());
 
     m_stopping = true;
@@ -79,17 +80,17 @@ void Scheduler::stop() {
         return;
     }
 
-    if (m_rootFiber) {
-        if (!stopping()) {
-            m_rootFiber->Resume(); // 执行未完成任务
-        }
-    }
-    SYLAR_LOG_DEBUG(g_logger) << "main return";
-
-    // 准备join之前，tick一下唤醒其他线程
+    // 通知其他线程结束了
     for (size_t i = 0; i < m_threadCount; ++i) {
         tickle();
     }  
+
+    if (m_rootFiber) {
+        if (!stopping()) {
+            m_rootFiber->Resume();
+        }
+    }
+    SYLAR_LOG_DEBUG(g_logger) << "main return";
 
     std::vector<Thread::ptr> thrs;
     {

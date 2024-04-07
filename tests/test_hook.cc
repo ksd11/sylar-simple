@@ -11,7 +11,8 @@
 sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 
 void test_sleep() {
-    sylar::IOManager iom(1);
+    // sylar::IOManager iom(1);
+    sylar::IOManager iom(1, true, "main", true);
     iom.schedule([](){
         // SYLAR_LOG_INFO(g_logger) << "sleep 2 in";
         sleep(2);
@@ -66,9 +67,10 @@ void test_sock() {
 }
 
 int main(int argc, char** argv) {
-    // test_sleep();
-    // return 0;
-    sylar::IOManager iom;
+    test_sleep();
+    return 0;
+    sylar::IOManager iom(2);
+    // sylar::IOManager iom(2, true, "main", false);
     iom.schedule(test_sock);
     return 0;
 }

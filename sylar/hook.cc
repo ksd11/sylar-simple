@@ -12,8 +12,7 @@ sylar::Logger::ptr g_logger = SYLAR_LOG_NAME("system");
 namespace sylar {
 
 static sylar::ConfigVar<int>::ptr g_tcp_connect_timeout =
-    sylar::Config::Lookup("tcp.connect.timeout", 500000, "tcp connect timeout");
-    // sylar::Config::Lookup("tcp.connect.timeout", 5000, "tcp connect timeout");
+    sylar::Config::Lookup("tcp.connect.timeout", 5000, "tcp connect timeout");
 
 static thread_local bool t_hook_enable = false;
 
@@ -403,6 +402,8 @@ int fcntl(int fd, int cmd, ... /* arg */ ) {
                     return fcntl_f(fd, cmd, arg);
                 }
                 ctx->setUserNonblock(arg & O_NONBLOCK);
+
+                // sysNonblock是系统行为，而UserNonblock是用户指定的行为，系统行为是真正的行为，但是对上层就好像用户指定的行为一样
                 if(ctx->getSysNonblock()) {
                     arg |= O_NONBLOCK;
                 } else {
@@ -419,6 +420,8 @@ int fcntl(int fd, int cmd, ... /* arg */ ) {
                 if(!ctx || ctx->isClose() || !ctx->isSocket()) {
                     return arg;
                 }
+
+                // 设置用户实际的行为
                 if(ctx->getUserNonblock()) {
                     return arg | O_NONBLOCK;
                 } else {
@@ -491,6 +494,7 @@ int ioctl(int d, unsigned long int request, ...) {
         if(!ctx || ctx->isClose() || !ctx->isSocket()) {
             return ioctl_f(d, request, arg);
         }
+        // 是socket并且没关闭
         ctx->setUserNonblock(user_nonblock);
     }
     return ioctl_f(d, request, arg);

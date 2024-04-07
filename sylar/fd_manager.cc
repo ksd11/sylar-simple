@@ -37,6 +37,7 @@ bool FdCtx::init() {
         m_isSocket = S_ISSOCK(fd_stat.st_mode);
     }
 
+    // 自动为socket添加NONBLOCK特性
     if(m_isSocket) {
         int flags = fcntl_f(m_fd, F_GETFL, 0);
         if(!(flags & O_NONBLOCK)) {
